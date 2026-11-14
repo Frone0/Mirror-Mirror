@@ -27,31 +27,46 @@ public class GameManager : MonoBehaviour
              case GameMode.Default:
                  return ComparePoses(a, b);
              case GameMode.Reverse:
-                 return ComparePoses(a, ReversePose(b));
+                 return CompareReverse(a, b);
              case GameMode.Combo:
-                 return IsComboAndDef == true ? ComparePoses(a, b) : ComparePoses(a, ReversePose(b));
+                 return IsComboAndDef == true ? ComparePoses(a, b) : CompareReverse(a, b);
              default:
                  return false;
          }
      }
 
-        StateOfBodyParts ReversePose(StateOfBodyParts pose)
-        {
-            return new StateOfBodyParts
-            {
-                RightHandIsUp = !pose.RightHandIsUp,
-                LeftHandIsUp  = !pose.LeftHandIsUp,
-                IsStanding    = !pose.IsStanding,
-                Jumped        = pose.Jumped   // jump stays same in reverse
-            };
-        }
+     bool CompareReverse(StateOfBodyParts a, StateOfBodyParts b) // a is player, b is npc
+     {
+         bool handsOpposite = a.RightHandIsUp != b.RightHandIsUp
+                           && a.LeftHandIsUp  != b.LeftHandIsUp;
+
+         if (b.Jumped) // he jumps - you dont, crouch doesnt matter
+         {
+             return handsOpposite && !a.Jumped;
+         }
+
+         if (b.IsStanding) // he stands - you crawl or jump, both are right
+         {
+             return handsOpposite && (!a.IsStanding || a.Jumped);
+         }
+
+         // he crawls - you stand and dont jump
+         return handsOpposite && a.IsStanding && !a.Jumped;
+     }
 
      bool ComparePoses(StateOfBodyParts a, StateOfBodyParts b)
      {
-         return a.RightHandIsUp == b.RightHandIsUp
-             && a.LeftHandIsUp  == b.LeftHandIsUp
-             && a.IsStanding    == b.IsStanding
-             && a.Jumped        == b.Jumped;
+         bool handsSame = a.RightHandIsUp == b.RightHandIsUp
+                       && a.LeftHandIsUp  == b.LeftHandIsUp;
+
+         if (b.Jumped) // on jump poses only hands and jump count, crouch doesnt matter
+         {
+             return handsSame && a.Jumped;
+         }
+
+         return handsSame
+             && a.IsStanding == b.IsStanding
+             && !a.Jumped;
      }
 
      public void SetGameMode(GameMode mode)

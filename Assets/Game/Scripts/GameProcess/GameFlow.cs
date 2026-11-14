@@ -11,10 +11,15 @@ public class GameFlow : MonoBehaviour
     public int CurrentLevel;  
     public bool GameIsRunning;
 
+
     public event Action<float> OnLevelStarted; 
     public event Action OnGameStopped;
 
     void Start()
+    {
+    }
+
+    public void StartGame()
     {
         GameIsRunning = true;
         StartCoroutine(LevelsTimer());
