@@ -2,15 +2,12 @@ using UnityEngine;
 
 public class Npc : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+   public PoseAnimator poseAnimator;
+   public characterState StateStore;
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+   public void SetPose(StateOfBodyParts state)
+   {
+        StateStore.CurrentState  = state;
+        poseAnimator.SetPose(state);
+   }
 }
