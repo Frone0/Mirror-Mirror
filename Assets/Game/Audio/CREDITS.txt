@@ -1,0 +1,13 @@
+All sounds here are CC0 (public domain), free for commercial use, credit not required.
+
+SFX/confirmation_001.wav, tick_002.wav, maximize_006.wav
+  Interface Sounds by Kenney - https://kenney.nl/assets/interface-sounds
+
+SFX/glass_breaking.wav
+  Glass Break - https://opengameart.org/content/glass-break
+
+Music/night_tune3.ogg
+  Lonely Night by Centurion_of_war - https://opengameart.org/node/162656
+
+Music/virtual_rush_loop.mp3
+  Virtual Rush by vitalezzz - https://opengameart.org/content/virtual-rush
