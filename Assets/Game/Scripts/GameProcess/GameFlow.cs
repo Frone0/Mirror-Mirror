@@ -4,26 +4,81 @@ using System;
 
 public class GameFlow : MonoBehaviour
 {
-    public StateOfBodyParts[] levels;
+    public StateOfBodyParts[] levels = new StateOfBodyParts[5];
     public Npc NPC;
     public GameManager gm;
     public float _TimePerLevel;
     public int CurrentLevel;  
     public bool GameIsRunning;
 
+    public RandomLevelsGenerator RLG;
+    public TrainingMode Training;
 
-    public event Action<float> OnLevelStarted; 
+    [Range(0f, 1f)] public float FreezeChance = 0.15f;   // chance that a level is a "do nothing" level
+    int levelsPlayed;
+
+
+    public event Action<float> OnLevelStarted;
+    public event Action OnGameStarted;   // HP, cracks and score reset on this
     public event Action OnGameStopped;
 
-    void Start()
+    float startTimePerLevel;   // levels get faster during a run, this brings the speed back on restart
+
+    void Awake()
     {
+        startTimePerLevel = _TimePerLevel;
     }
 
     public void StartGame()
     {
+        if (GameIsRunning) return;   // don't start a second game on top of a running one
         GameIsRunning = true;
+        gm.IsFreezeLevel = false;
+        levelsPlayed = 0;
+
+        if(gm.StartMode == GameStartingMode.Infinity)
+        {
+            _TimePerLevel = startTimePerLevel;
+            gm.ResetScore();
+            gm.CurrentGameMode = GameMode.Default;
+        }
+
+        OnGameStarted?.Invoke();
+
+        if(gm.StartMode == GameStartingMode.Training)
+        {
+            Training.Run();
+            return;
+        }
+
+        if(gm.StartMode == GameStartingMode.Infinity)
+        {
+        FillRandomLevels();   // fill before the timer starts, so the first pose is random too
+        }
+
         StartCoroutine(LevelsTimer());
     }
+
+    // Training Mode button calls this
+    public void StartTraining()
+    {
+        gm.SetTraining();
+        StartGame();
+    }
+
+    // events can only be called from inside this class, so TrainingMode uses this
+    public void RaiseLevelStarted(float seconds)
+    {
+        OnLevelStarted?.Invoke(seconds);
+    }
+
+   public void FillRandomLevels()
+   {
+      for(int i = 0;i < levels.Length ; i ++)
+      {
+         levels[i] = RLG.GetRandomLevel(); 
+      }
+   }
 
 
 
@@ -33,9 +88,20 @@ public class GameFlow : MonoBehaviour
 
         while (GameIsRunning)
         {
-            NPC.SetPose(levels[CurrentLevel]);
-            OnLevelStarted?.Invoke(_TimePerLevel);
-            yield return new WaitForSeconds(_TimePerLevel);
+            // random "do nothing" level: never the first level, never two in a row
+            gm.IsFreezeLevel = levelsPlayed > 0 && !gm.IsFreezeLevel && UnityEngine.Random.value < FreezeChance;
+            levelsPlayed++;
+
+            float time = _TimePerLevel;
+            if(gm.CurrentGameMode == GameMode.Reverse && !gm.IsFreezeLevel)
+            {
+                time++;
+            }
+
+
+            NPC.SetPose(levels[CurrentLevel], time * 0.5f);  
+            OnLevelStarted?.Invoke(time);
+            yield return new WaitForSeconds(time);
 
             if (gm.CheckMatch())
             {
@@ -43,13 +109,15 @@ public class GameFlow : MonoBehaviour
             }
             else
             {
-                gm.ChangheScore(-1);
+                gm.ChangheScore(-1);   // HealthSystem takes 1 HP here and can end the game
             }
+
+            if (!GameIsRunning) yield break;   // last HP lost -> HealthSystem already stopped the game
 
             CurrentLevel++;
 
 
-            if(CurrentLevel % 5 == 0)
+            if(levelsPlayed % 5 == 0)   // levelsPlayed never wraps (CurrentLevel goes back to 0 after the last slot)
             {
                 PassedAnotherFiveLevels();
             }
@@ -73,10 +141,24 @@ public class GameFlow : MonoBehaviour
     void PassedAnotherFiveLevels()
     {
        gm.SetGameMode((GameMode)(((int)gm.CurrentGameMode + 1) % 3));
-       if(_TimePerLevel > 1)
+       if(_TimePerLevel > 1.5)
        {
-       _TimePerLevel *= 0.9f;    
+       _TimePerLevel *= 0.85f;    
        }
+
+       FillRandomLevels();
+    }
+
+    
+    public void AbortGame()
+    {
+        StopAllCoroutines();   // the level loop
+        if (Training != null) Training.Abort();
+        if (GameIsRunning) StopGame();
+        gm.StartMode = GameStartingMode.Infinity;
+        gm.CurrentGameMode = GameMode.Default;
+        gm.IsFreezeLevel = false;
+        NPC.SetPose(new StateOfBodyParts { IsStanding = true });
     }
 
     public void StopGame()

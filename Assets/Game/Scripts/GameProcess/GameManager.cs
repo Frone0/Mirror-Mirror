@@ -4,6 +4,12 @@ public enum GameMode
 {
     Default,Reverse,Combo
 }
+
+[System.Serializable]
+public enum GameStartingMode
+{
+   Infinity,Training,Unreal  
+}
 public class GameManager : MonoBehaviour
 {
      public  PlayerControl Player;
@@ -11,16 +17,25 @@ public class GameManager : MonoBehaviour
      public int Score;
      public GameMode CurrentGameMode;
      public int DifficultyLevel;
+
+     public GameStartingMode StartMode;
+
+      
      public bool IsComboAndDef;
+     public bool IsFreezeLevel;   // random "do nothing" level, can happen in any mode
 
      public event Action GetDamageEvent; 
-      public event Action GetScoreEvent; 
-      public event Action<GameMode> GetGameModeChangedEvent;
+     public event Action GetScoreEvent; 
+     public event Action<GameMode> GetGameModeChangedEvent;
+
+
      public bool CheckMatch()
      {
          StateOfBodyParts a = Player.StateStore.CurrentState;
          StateOfBodyParts b = NPC.StateStore.CurrentState;
-     
+
+         if (IsFreezeLevel) return IsStill(a);   // "do nothing" beats every mode
+
 
         switch (CurrentGameMode)
          {
@@ -33,6 +48,11 @@ public class GameManager : MonoBehaviour
              default:
                  return false;
          }
+     }
+
+     public void SetTraining()
+     {
+         StartMode = GameStartingMode.Training;
      }
 
      bool CompareReverse(StateOfBodyParts a, StateOfBodyParts b) // a is player, b is npc
@@ -52,6 +72,11 @@ public class GameManager : MonoBehaviour
 
          // he crawls - you stand and dont jump
          return handsOpposite && a.IsStanding && !a.Jumped;
+     }
+
+     bool IsStill(StateOfBodyParts a) // do nothing mode: no hands, no crouch, no jump
+     {
+         return !a.RightHandIsUp && !a.LeftHandIsUp && a.IsStanding && !a.Jumped;
      }
 
      bool ComparePoses(StateOfBodyParts a, StateOfBodyParts b)

@@ -32,6 +32,7 @@ public class GameSoundsEffect : MonoBehaviour
         UIControler.GameManager.GetDamageEvent += PlayWrong;
         UIControler.GameManager.GetGameModeChangedEvent += PlayModeChange;
         UIControler.GameFlow.OnLevelStarted += StartTicks;
+        UIControler.GameFlow.OnGameStopped += StopTicks;
     }
     void OnDisable()
     {
@@ -39,6 +40,13 @@ public class GameSoundsEffect : MonoBehaviour
         UIControler.GameManager.GetDamageEvent -= PlayWrong;
         UIControler.GameManager.GetGameModeChangedEvent -= PlayModeChange;
         UIControler.GameFlow.OnLevelStarted -= StartTicks;
+        UIControler.GameFlow.OnGameStopped -= StopTicks;
+    }
+
+    void StopTicks() // game ended or left from the pause menu: no ticking for a level that's gone
+    {
+        if (tickRoutine != null) StopCoroutine(tickRoutine);
+        tickRoutine = null;
     }
 
     void PlayRight()

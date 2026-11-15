@@ -47,11 +47,22 @@ public class ScoreCounterUI : MonoBehaviour
     {
         UIControler.GameManager.GetScoreEvent += GotRight;
         UIControler.GameManager.GetDamageEvent += GotWrong;
+        UIControler.GameFlow.OnGameStarted += Refresh;
     }
     void OnDisable()
     {
         UIControler.GameManager.GetScoreEvent -= GotRight;
         UIControler.GameManager.GetDamageEvent -= GotWrong;
+        UIControler.GameFlow.OnGameStarted -= Refresh;
+    }
+
+    void Refresh() // new game: score was reset, show it right away
+    {
+        streak = 0;
+        ShowStreak();
+        shownScore = UIControler.GameManager.Score;
+        ScoreText.text = shownScore.ToString();
+        ScoreText.color = BaseColor();
     }
 
     void GotRight()
